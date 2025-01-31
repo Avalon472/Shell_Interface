@@ -5,8 +5,13 @@
 #include <stdlib.h>
 #include <wait.h>
 #include <unistd.h>
+#include <csignal>
 
 using namespace std;
+
+int interrupt = 0;
+int quit = 0;
+int stop = 0;
 
 void parse_args(string line, vector<string> &cmds){
     stringstream liness(line);
@@ -17,10 +22,24 @@ void parse_args(string line, vector<string> &cmds){
     }
 }
 
+void signal_handler(int sig){
+    if(sig == 2)
+        interrupt += 1;
+    else if(sig == 3)
+        quit += 1;
+    else if(sig == 20)
+        stop += 1;
+}
+
 int main(){
 
     vector<int> history;
+    signal(SIGINT, signal_handler);
+    signal(SIGQUIT, signal_handler);
+    signal(SIGTSTP, signal_handler);
+
     while(true){
+
         cout << "mj385s$";
 
         string cmd;
@@ -33,11 +52,22 @@ int main(){
         
         //built-in commands
         if(cmd == "help"){
-            cout << "Here's where the help text goes" << endl;
+            cout << "//****************************************************************//" << endl;
+            cout << "//                                                                //" << endl;
+            cout << "//             <Designed by: Michael Jakob>                       //" << endl;
+            cout << "//             <CSC360 - Operating Systems>                       //" << endl;
+            cout << "//      Project #1: My Shell - Writing Your Own Shell             //" << endl;
+            cout << "//This Shell supports the following commands: help, exit, history //" << endl;
+            cout << "//                                                                //" << endl;
+            cout << "//****************************************************************//" << endl;
+            
             continue;
         }
         else if(cmd == "exit"){
             cout << "Shell terminated. Goodbye!" << endl;
+            cout << "Number of interrupt signals: " << interrupt << endl;
+            cout << "Number of stop signals: " << stop << endl;
+            cout << "Number of terminate signals: " << quit << endl;                        
             exit(0);
         }
         else if(cmd == "history"){
@@ -61,6 +91,8 @@ int main(){
         int status;
         if(pid == 0){
             execvp(execArgs[0], const_cast<char**>(execArgs.data()));
+            cout << "Error: Command not recognized" << endl;
+            exit(1);
         }
         else{
             waitpid(pid, &status, 0);
